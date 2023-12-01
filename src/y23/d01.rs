@@ -1,4 +1,7 @@
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
+
+
+use rayon::prelude::*;
 
 
 fn part_1(input: &str) -> i32 {
@@ -92,8 +95,6 @@ fn part_2(input: &str) -> i32 {
 
 
 fn part_2_make_fsm() -> Vec<(u8, u8)> {
-    use std::collections::HashMap;
-
     let words = [ "one", "two", "three", "four", "five", "six", "seven", "eight", "nine" ];
 
     let mut vocab = HashSet::new();
@@ -219,6 +220,36 @@ fn part_2_fsm(input: &str, table: &[(u8, u8)]) -> i32 {
     return result;
 }
 
+fn part_2_fsm_threaded(input: &str, table: &[(u8, u8)]) -> i32 {
+    let n = if input.len() < 128 { 1 } else { 12 };
+
+    (0..n)
+    .into_par_iter()
+    .map(move |i| {
+        let chunk_size = input.len() / n;
+
+        let mut begin = chunk_size * i;
+        let mut end = chunk_size * (i+1);
+
+        while begin > 0 && input.as_bytes()[begin - 1] != b'\n' {
+            begin -= 1;
+        }
+
+        if i < n-1 {
+            while end > begin && input.as_bytes()[end - 1] != b'\n' {
+                end -= 1;
+            }
+        }
+        else {
+            end = input.len();
+        }
+
+        //println!("{begin}..{end}");
+
+        part_2_fsm(&input[begin..end], table)
+    }).sum()
+}
+
 
 fn run(f: impl FnOnce(&str) -> i32, input: &str) {
     let t0 = std::time::Instant::now();
@@ -228,11 +259,26 @@ fn run(f: impl FnOnce(&str) -> i32, input: &str) {
         input.len() as f64 / dt.as_secs_f64() / 1024.0 / 1024.0);
 }
 
+
+fn bench(f: impl Fn(&str) -> i32, n: u32, input: &str) {
+    let t0 = std::time::Instant::now();
+    let mut result = 0;
+    for _ in 0..n {
+        result = f(input);
+    }
+    let dt = t0.elapsed();
+    println!("result: {result} in {:?}, {:.2} MiB/s",
+        dt/n,
+        n as f64 * input.len() as f64 / dt.as_secs_f64() / 1024.0 / 1024.0);
+}
+
 pub fn main() {
     for _ in 0..1000 {
         if 0==1 { break }
-        part_1(include_str!("d01-prod.txt"));
-        part_2(include_str!("d01-prod.txt"));
+        (0..12).into_par_iter().for_each(|_| {
+            part_1(include_str!("d01-prod.txt"));
+            part_2(include_str!("d01-prod.txt"));
+        });
     }
 
     println!("part 1");
@@ -249,6 +295,32 @@ pub fn main() {
     let fsm = part_2_make_fsm();
     run(|i| part_2_fsm(i, &fsm), include_str!("d01-test-2.txt"));
     run(|i| part_2_fsm(i, &fsm), include_str!("d01-prod.txt"));
+    println!();
+
+    println!("part 2 fsm threaded");
+    let fsm = part_2_make_fsm();
+    run(|i| part_2_fsm_threaded(i, &fsm), include_str!("d01-test-2.txt"));
+    run(|i| part_2_fsm_threaded(i, &fsm), include_str!("d01-prod.txt"));
+    println!();
+
+    let mut big = String::new();
+    for _ in 0..1000 {
+        big.push_str(include_str!("d01-prod.txt"));
+    }
+    run(|i| part_2_fsm(i, &fsm), &big);
+    run(|i| part_2_fsm_threaded(i, &fsm), &big);
+    println!();
+
+    println!("bench part 2 10_000 iters");
+    bench(|i| part_2(i), 10_000, include_str!("d01-prod.txt"));
+    bench(|i| part_2_fsm(i, &fsm), 10_000, include_str!("d01-prod.txt"));
+    bench(|i| part_2_fsm_threaded(i, &fsm), 10_000, include_str!("d01-prod.txt"));
+    println!();
+
+    println!("bench part 2 1000x cat'd, 100 iters");
+    bench(|i| part_2(i), 100, &big);
+    bench(|i| part_2_fsm(i, &fsm), 100, &big);
+    bench(|i| part_2_fsm_threaded(i, &fsm), 100, &big);
     println!();
 }
 
