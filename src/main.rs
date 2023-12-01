@@ -1,4 +1,5 @@
 mod y22;
+mod y23;
 
 fn main() {
     #[cfg(debug_assertions)]
@@ -7,6 +8,7 @@ fn main() {
         std::process::exit(1)
     }));
 
-    y22::d19::main();
+
+    y23::d01::main();
 }
 

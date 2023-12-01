@@ -136,8 +136,8 @@ impl State {
     }
 
     #[inline]
-    fn step(&self) -> Self {
-        let mut this = *self;
+    fn step(self) -> Self {
+        let mut this = self;
         this.minute += 1;
         this.pack.ore   += this.pack.ore_robot;
         this.pack.clay  += this.pack.clay_robot;
@@ -185,7 +185,7 @@ impl Solver {
         // can we even beat the max anymore?
         {
             let remaining = (self.limit - state.minute) as u32;
-            let max_yield = remaining * state.pack.geode_robot as u32 + (remaining)*(remaining-1)/2;
+            let max_yield = remaining * state.pack.geode_robot as u32 + remaining*(remaining-1)/2;
             if state.pack.geode as u32 + max_yield <= self.max_result as u32 {
                 //self.memo.insert(pack_64, (state.minute, 0));
                 return 0;
@@ -198,12 +198,12 @@ impl Solver {
             result = result.max(self.rec(state.step().build_geode_robot(&self.bp), true, true, true));
         }
         else {
-            let mut new_can_ore = true;
-            if state.can_build_ore_robot(&self.bp) {
-                new_can_ore = false;
+            let mut new_can_obsi = true;
+            if state.can_build_obsi_robot(&self.bp) {
+                new_can_obsi = false;
 
-                if can_ore && state.pack.ore_robot < self.bp.max_ore_cost {
-                    result = result.max(self.rec(state.step().build_ore_robot(&self.bp), true, true, true));
+                if can_obsi && state.pack.obsi_robot < self.bp.geode_robot.1 {
+                    result = result.max(self.rec(state.step().build_obsi_robot(&self.bp), true, true, true));
                 }
             }
 
@@ -216,12 +216,12 @@ impl Solver {
                 }
             }
 
-            let mut new_can_obsi = true;
-            if state.can_build_obsi_robot(&self.bp) {
-                new_can_obsi = false;
+            let mut new_can_ore = true;
+            if state.can_build_ore_robot(&self.bp) {
+                new_can_ore = false;
 
-                if can_obsi && state.pack.obsi_robot < self.bp.geode_robot.1 {
-                    result = result.max(self.rec(state.step().build_obsi_robot(&self.bp), true, true, true));
+                if can_ore && state.pack.ore_robot < self.bp.max_ore_cost {
+                    result = result.max(self.rec(state.step().build_ore_robot(&self.bp), true, true, true));
                 }
             }
 
@@ -242,6 +242,51 @@ impl Solver {
 
         return result;
     }
+
+    fn brute_force(&mut self, state: State, n: &mut u32) -> u8 {
+        let pack_64: u64 = unsafe { core::mem::transmute(state.pack) };
+
+        if let Some((minute, result)) = self.memo.get(&pack_64).copied() {
+            if state.minute >= minute {
+                return result;
+            }
+        }
+
+        if state.minute == self.limit {
+            return state.pack.geode;
+        }
+
+        *n += 1;
+        if *n % 16*1024 == 0 {
+            //println!("{}", n);
+        }
+
+        let mut result = 0;
+
+        if state.can_build_geode_robot(&self.bp) {
+            result = result.max(self.brute_force(state.step().build_geode_robot(&self.bp), n));
+        }
+        else {
+            if state.can_build_obsi_robot(&self.bp) {
+                result = result.max(self.brute_force(state.step().build_obsi_robot(&self.bp), n));
+            }
+
+            if state.can_build_clay_robot(&self.bp) {
+                result = result.max(self.brute_force(state.step().build_clay_robot(&self.bp), n));
+            }
+
+            if state.can_build_ore_robot(&self.bp) {
+                result = result.max(self.brute_force(state.step().build_ore_robot(&self.bp), n));
+            }
+
+            // wait & build on next turn.
+            result = result.max(self.brute_force(state.step(), n));
+        }
+
+        self.memo.insert(pack_64, (state.minute, result));
+
+        return result;
+    }
 }
 
 
@@ -253,6 +298,9 @@ fn part_1(input: &str) {
     for bp in &blueprints {
         let mut solver = Solver::new(*bp, 24);
         let geodes = solver.rec(State::new(), true, true, true);
+        let mut n = 0;
+        //let geodes = solver.brute_force(State::new(), &mut n);
+        //println!("done {}, visited {} states", geodes, n);
         //println!("{}: {}", bp.id, geodes);
         result += bp.id as u32 * geodes as u32;
     }
@@ -270,6 +318,9 @@ fn part_2(input: &str) {
     for bp in &blueprints {
         let mut solver = Solver::new(*bp, 32);
         let geodes = solver.rec(State::new(), true, true, true);
+        let mut n = 0;
+        //let geodes = solver.brute_force(State::new(), &mut n);
+        //println!("done {}, visited {} states", geodes, n);
         //println!("{}: {}", bp.id, geodes);
         result *= geodes as u32;
     }
@@ -278,12 +329,11 @@ fn part_2(input: &str) {
 
 pub fn main() {
     part_1(include_str!("d19-test.txt"));
-    part_2(include_str!("d19-test.txt"));
-
     part_1(include_str!("d19-prod.txt"));
-    part_2(include_str!("d19-prod.txt"));
-
     part_1(include_str!("d19-prod-2.txt"));
+
+    part_2(include_str!("d19-test.txt"));
+    part_2(include_str!("d19-prod.txt"));
     part_2(include_str!("d19-prod-2.txt"));
 }
 
