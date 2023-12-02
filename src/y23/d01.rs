@@ -439,6 +439,73 @@ fn part_2_fsm2_vect_threaded(input: &str, fwd: &[(u8, u8)], bwd: &[(u8, u8)]) ->
 }
 
 
+fn part_2_fsm3(input: &str, fwd: &[(u8, u8)], bwd: &[(u8, u8)]) -> i32 {
+    let mut input = input.as_bytes();
+
+    let iter = core::iter::from_fn(|| {
+        if input.len() == 0 {
+            return None;
+        }
+
+        let mut len = 0;
+
+        while len + 8 < input.len() {
+            let bytes = unsafe { input.as_ptr().add(len).cast::<u64>().read_unaligned() };
+            let bytes = bytes ^ 0x0a0a0a0a0a0a0a0a;
+            let zero_or_high = bytes.wrapping_sub(0x0101010101010101);
+            let not_high = !bytes & 0x8080808080808080;
+            let mask = zero_or_high & not_high;
+
+            if mask != 0 {
+                len += (mask.trailing_zeros() / 8) as usize;
+                break;
+            }
+            len += 8;
+        }
+
+        while len < input.len() && input[len] != b'\n' {
+            len += 1;
+        }
+
+        let line = &input[..len];
+        input = &input[len+1..];
+        return Some(line);
+    });
+
+
+    iter.par_bridge().map(|line| {
+        let mut vs = [0, 0];
+        let mut state = 0;
+
+        for i in line.iter().copied() {
+            let (s, a) = unsafe {
+                *fwd.get_unchecked(state as usize * 256 + i as usize)
+            };
+            state = s;
+
+            if a != 0 {
+                vs[0] = a as i32;
+                break;
+            }
+        }
+
+        for i in line.iter().rev().copied() {
+            let (s, a) = unsafe {
+                *bwd.get_unchecked(state as usize * 256 + i as usize)
+            };
+            state = s;
+
+            if a != 0 {
+                vs[1] = a as i32;
+                break;
+            }
+        }
+
+        return vs[0]*10 + vs[1];
+    }).sum()
+}
+
+
 fn run(f: impl FnOnce(&str) -> i32, input: &str) {
     let t0 = std::time::Instant::now();
     let result = f(input);
@@ -515,6 +582,11 @@ pub fn main() {
     run(|i| part_2_fsm2_vect_threaded(i, &fsm2a, &fsm2b), include_str!("d01-prod.txt"));
     println!();
 
+    println!("part 2 fsm3");
+    run(|i| part_2_fsm3(i, &fsm2a, &fsm2b), include_str!("d01-test-2.txt"));
+    run(|i| part_2_fsm3(i, &fsm2a, &fsm2b), include_str!("d01-prod.txt"));
+    println!();
+
 
     let mut big = String::new();
     for _ in 0..1000 {
@@ -526,6 +598,7 @@ pub fn main() {
     run(|i| part_2_fsm2_threaded(i, &fsm2a, &fsm2b), &big);
     run(|i| part_2_fsm2_vect(i, &fsm2a, &fsm2b), &big);
     run(|i| part_2_fsm2_vect_threaded(i, &fsm2a, &fsm2b), &big);
+    run(|i| part_2_fsm3(i, &fsm2a, &fsm2b), &big);
     println!();
 
     println!("bench part 2 10_000 iters");
@@ -536,6 +609,7 @@ pub fn main() {
     bench(|i| part_2_fsm2_threaded(i, &fsm2a, &fsm2b), 10_000, include_str!("d01-prod.txt"));
     bench(|i| part_2_fsm2_vect(i, &fsm2a, &fsm2b), 10_000, include_str!("d01-prod.txt"));
     bench(|i| part_2_fsm2_vect_threaded(i, &fsm2a, &fsm2b), 10_000, include_str!("d01-prod.txt"));
+    bench(|i| part_2_fsm3(i, &fsm2a, &fsm2b), 10_000, include_str!("d01-prod.txt"));
     println!();
 
     println!("bench part 2 1000x cat'd, 100 iters");
@@ -546,6 +620,7 @@ pub fn main() {
     bench(|i| part_2_fsm2_threaded(i, &fsm2a, &fsm2b), 100, &big);
     bench(|i| part_2_fsm2_vect(i, &fsm2a, &fsm2b), 100, &big);
     bench(|i| part_2_fsm2_vect_threaded(i, &fsm2a, &fsm2b), 100, &big);
+    bench(|i| part_2_fsm3(i, &fsm2a, &fsm2b), 100, &big);
     println!();
 }
 
