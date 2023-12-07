@@ -312,6 +312,82 @@ fn part_2_fast(input: &str) -> i32 {
     return result;
 }
 
+fn part_2_fast_isse(input: &str) -> i32 {
+    let mut hands: [Vec<([u8; 5], u16)>; NUM_HAND_TYPES] = core::array::from_fn(|_| vec![]);
+
+    for line in input.lines() {
+        let (hand, bid) = line.split_once(" ").unwrap();
+        assert!(hand.len() == 5);
+
+        let bid = bid.parse().unwrap();
+
+        //let hand_str = hand;
+
+        let mut card_counts = [0; NUM_CARDS];
+        let hand = core::array::from_fn(|i| {
+            let value = match hand.as_bytes()[i] {
+                b'A' => 12,
+                b'K' => 11,
+                b'Q' => 10,
+                b'T' =>  9,
+                b'9' =>  8,
+                b'8' =>  7,
+                b'7' =>  6,
+                b'6' =>  5,
+                b'5' =>  4,
+                b'4' =>  3,
+                b'3' =>  2,
+                b'2' =>  1,
+                b'J' =>  0,
+                _ => unreachable!()
+            };
+            card_counts[value as usize] += 1;
+            return value;
+        });
+
+        let mut highest_count = 0;
+        let mut second_count = 0;
+        for count in card_counts.iter().copied().skip(1) {
+            if count > highest_count {
+                second_count = highest_count;
+
+                highest_count = count;
+            } else if count > second_count {
+                second_count = count;
+            }
+        }
+        highest_count += card_counts[0];
+
+        let ty = match (second_count, highest_count) {
+            (1, 1) => 0,
+            (1, 2) => 1,
+            (2, 2) => 2,
+            (1, 3) => 3,
+            (2, 3) => 4,
+            (1, 4) => 5,
+            (0, 5) => 6,
+            _ => panic!(),
+        };
+
+        //println!("{hand_str}: {ty}");
+
+        hands[ty].push((hand, bid));
+    }
+
+    let mut result = 0;
+    let mut rank = 1;
+    for hands in &mut hands {
+        hands.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+
+        for (_, bid) in hands {
+            result += rank * *bid as i32;
+            rank += 1;
+        }
+    }
+
+    return result;
+}
+
 
 fn run(name: &str, f: impl FnOnce(&str) -> i32, input: &str) {
     let t0 = std::time::Instant::now();
@@ -330,5 +406,8 @@ pub fn main() {
 
     run("part_2_fast", part_2_fast, include_str!("d07-test.txt"));
     run("part_2_fast", part_2_fast, include_str!("d07-prod.txt"));
+
+    run("part_2_fast_isse", part_2_fast_isse, include_str!("d07-test.txt"));
+    run("part_2_fast_isse", part_2_fast_isse, include_str!("d07-prod.txt"));
 }
 
