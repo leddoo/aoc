@@ -216,6 +216,102 @@ fn part_2(input: &str) -> i32 {
     return result;
 }
 
+fn part_2_fast(input: &str) -> i32 {
+    let mut hands: [Vec<([u8; 5], u16)>; NUM_HAND_TYPES] = core::array::from_fn(|_| vec![]);
+
+    for line in input.lines() {
+        let (hand, bid) = line.split_once(" ").unwrap();
+        assert!(hand.len() == 5);
+
+        let bid = bid.parse().unwrap();
+
+        //let hand_str = hand;
+
+        let mut card_counts = [0; NUM_CARDS];
+        let mut multi_counts = [0; 5];
+        let mut js = 0;
+        let hand = core::array::from_fn(|i| {
+            let value = match hand.as_bytes()[i] {
+                b'A' => 12,
+                b'K' => 11,
+                b'Q' => 10,
+                b'T' =>  9,
+                b'9' =>  8,
+                b'8' =>  7,
+                b'7' =>  6,
+                b'6' =>  5,
+                b'5' =>  4,
+                b'4' =>  3,
+                b'3' =>  2,
+                b'2' =>  1,
+
+                b'J' => {
+                    js += 1;
+                    return 0;
+                }
+
+                _ => unreachable!()
+            };
+
+            let old_count = card_counts[value as usize];
+            card_counts[value as usize] = old_count + 1;
+
+            if old_count != 0 {
+                multi_counts[old_count - 1] -= 1;
+                multi_counts[old_count    ] += 1;
+            }
+            else {
+                multi_counts[0] += 1;
+            }
+
+            return value;
+        });
+
+        //println!("{hand_str}: {card_counts:?}, {multi_counts:?}");
+
+        for i in (0..multi_counts.len()).rev() {
+            if multi_counts[i] != 0 {
+                multi_counts[i] -= 1;
+                multi_counts[i + js] += 1;
+                js = 0;
+                break;
+            }
+        }
+        if js != 0 {
+            debug_assert!(js == 5);
+            multi_counts[5-1] = 1;
+        }
+
+        let ty =
+            if multi_counts[5-1] != 0 { TYPE_FIVE }
+            else if multi_counts[4-1] != 0 { TYPE_FOUR }
+            else if multi_counts[3-1] != 0 {
+                if multi_counts[2-1] != 0 { TYPE_HOUSE }
+                else                      { TYPE_THREE }
+            }
+            else if multi_counts[2-1] > 1 { TYPE_2PAIR }
+            else if multi_counts[2-1] == 1 { TYPE_1PAIR }
+            else { TYPE_HIGH };
+
+        //println!("{hand_str}: {ty}");
+
+        hands[ty].push((hand, bid));
+    }
+
+    let mut result = 0;
+    let mut rank = 1;
+    for hands in &mut hands {
+        hands.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+
+        for (_, bid) in hands {
+            result += rank * *bid as i32;
+            rank += 1;
+        }
+    }
+
+    return result;
+}
+
 
 fn run(name: &str, f: impl FnOnce(&str) -> i32, input: &str) {
     let t0 = std::time::Instant::now();
@@ -231,5 +327,8 @@ pub fn main() {
 
     run("part_2", part_2, include_str!("d07-test.txt"));
     run("part_2", part_2, include_str!("d07-prod.txt"));
+
+    run("part_2_fast", part_2_fast, include_str!("d07-test.txt"));
+    run("part_2_fast", part_2_fast, include_str!("d07-prod.txt"));
 }
 
