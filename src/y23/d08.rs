@@ -185,10 +185,7 @@ fn run(name: &str, f: impl FnOnce(&str) -> u64, input: &str) {
 }
 
 pub fn main() {
-    #[cfg(not(debug_assertions))]
-    for _ in 0..1_000 {
-        core::hint::black_box(part_1(include_str!("d08-prod.txt")));
-    }
+    println!("-- day 08 --");
 
     run("part_1", part_1, include_str!("d08-test.txt"));
     run("part_1", part_1, include_str!("d08-prod.txt"));
@@ -196,5 +193,7 @@ pub fn main() {
     run("part_2", part_2, include_str!("d08-test-2.txt"));
     run("part_2", part_2, include_str!("d08-prod.txt"));
     run("part_2_fast", part_2_fast, include_str!("d08-prod.txt"));
+
+    println!();
 }
 

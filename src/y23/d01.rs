@@ -506,11 +506,11 @@ fn part_2_fsm3(input: &str, fwd: &[(u8, u8)], bwd: &[(u8, u8)]) -> i32 {
 }
 
 
-fn run(f: impl FnOnce(&str) -> i32, input: &str) {
+fn run(name: &str, f: impl FnOnce(&str) -> i32, input: &str) {
     let t0 = std::time::Instant::now();
     let result = f(input);
     let dt = t0.elapsed();
-    println!("result: {result} in {dt:?}, {:.2} MiB/s",
+    println!("{name}: {result} in {dt:?}, {:.2} MiB/s",
         input.len() as f64 / dt.as_secs_f64() / 1024.0 / 1024.0);
 }
 
@@ -528,66 +528,41 @@ fn bench(f: impl Fn(&str) -> i32, n: u32, input: &str) {
 }
 
 pub fn main() {
-    for _ in 0..1000 {
-        #[cfg(debug_assertions)]
-        if 1==1 { break }
+    println!("-- day 01 --");
 
-        (0..12).into_par_iter().for_each(|_| {
-            part_1(include_str!("d01-prod.txt"));
-            part_2(include_str!("d01-prod.txt"));
-        });
-    }
+    run("part_1", part_1, include_str!("d01-test.txt"));
+    run("part_1", part_1, include_str!("d01-prod.txt"));
 
-    println!("part 1");
-    run(part_1, include_str!("d01-test.txt"));
-    run(part_1, include_str!("d01-prod.txt"));
-    println!();
-
-    println!("part 2");
-    run(part_2, include_str!("d01-test-2.txt"));
-    run(part_2, include_str!("d01-prod.txt"));
-    println!();
+    run("part_2", part_2, include_str!("d01-test-2.txt"));
+    run("part_2", part_2, include_str!("d01-prod.txt"));
 
     let fsm = part_2_make_fsm();
+    run("part_2_fsm", |i| part_2_fsm(i, &fsm), include_str!("d01-test-2.txt"));
+    run("part_2_fsm", |i| part_2_fsm(i, &fsm), include_str!("d01-prod.txt"));
 
-    println!("part 2 fsm");
-    run(|i| part_2_fsm(i, &fsm), include_str!("d01-test-2.txt"));
-    run(|i| part_2_fsm(i, &fsm), include_str!("d01-prod.txt"));
-    println!();
-
-    println!("part 2 fsm threaded");
-    run(|i| part_2_fsm_threaded(i, &fsm), include_str!("d01-test-2.txt"));
-    run(|i| part_2_fsm_threaded(i, &fsm), include_str!("d01-prod.txt"));
-    println!();
+    run("part_2_fsm_threaded", |i| part_2_fsm_threaded(i, &fsm), include_str!("d01-test-2.txt"));
+    run("part_2_fsm_threaded", |i| part_2_fsm_threaded(i, &fsm), include_str!("d01-prod.txt"));
 
     let (fsm2a, fsm2b) = part_2_make_fsm2();
+    run("part_2_fsm2", |i| part_2_fsm2(i, &fsm2a, &fsm2b), include_str!("d01-test-2.txt"));
+    run("part_2_fsm2", |i| part_2_fsm2(i, &fsm2a, &fsm2b), include_str!("d01-prod.txt"));
 
-    println!("part 2 fsm2");
-    run(|i| part_2_fsm2(i, &fsm2a, &fsm2b), include_str!("d01-test-2.txt"));
-    run(|i| part_2_fsm2(i, &fsm2a, &fsm2b), include_str!("d01-prod.txt"));
-    println!();
+    run("part_2_fsm2_threaded", |i| part_2_fsm2_threaded(i, &fsm2a, &fsm2b), include_str!("d01-test-2.txt"));
+    run("part_2_fsm2_threaded", |i| part_2_fsm2_threaded(i, &fsm2a, &fsm2b), include_str!("d01-prod.txt"));
 
-    println!("part 2 fsm2 threaded");
-    run(|i| part_2_fsm2_threaded(i, &fsm2a, &fsm2b), include_str!("d01-test-2.txt"));
-    run(|i| part_2_fsm2_threaded(i, &fsm2a, &fsm2b), include_str!("d01-prod.txt"));
-    println!();
+    run("part_2_fsm2_vect", |i| part_2_fsm2_vect(i, &fsm2a, &fsm2b), include_str!("d01-test-2.txt"));
+    run("part_2_fsm2_vect", |i| part_2_fsm2_vect(i, &fsm2a, &fsm2b), include_str!("d01-prod.txt"));
 
-    println!("part 2 fsm2 vect");
-    run(|i| part_2_fsm2_vect(i, &fsm2a, &fsm2b), include_str!("d01-test-2.txt"));
-    run(|i| part_2_fsm2_vect(i, &fsm2a, &fsm2b), include_str!("d01-prod.txt"));
-    println!();
+    run("part_2_fsm2_vect_threaded", |i| part_2_fsm2_vect_threaded(i, &fsm2a, &fsm2b), include_str!("d01-test-2.txt"));
+    run("part_2_fsm2_vect_threaded", |i| part_2_fsm2_vect_threaded(i, &fsm2a, &fsm2b), include_str!("d01-prod.txt"));
 
-    println!("part 2 fsm2 vect threaded");
-    run(|i| part_2_fsm2_vect_threaded(i, &fsm2a, &fsm2b), include_str!("d01-test-2.txt"));
-    run(|i| part_2_fsm2_vect_threaded(i, &fsm2a, &fsm2b), include_str!("d01-prod.txt"));
-    println!();
+    run("part_2_fsm3", |i| part_2_fsm3(i, &fsm2a, &fsm2b), include_str!("d01-test-2.txt"));
+    run("part_2_fsm3", |i| part_2_fsm3(i, &fsm2a, &fsm2b), include_str!("d01-prod.txt"));
 
-    println!("part 2 fsm3");
-    run(|i| part_2_fsm3(i, &fsm2a, &fsm2b), include_str!("d01-test-2.txt"));
-    run(|i| part_2_fsm3(i, &fsm2a, &fsm2b), include_str!("d01-prod.txt"));
     println!();
 
 
+    /*
     let mut big = String::new();
     for _ in 0..1000 {
         big.push_str(include_str!("d01-prod.txt"));
@@ -622,5 +597,6 @@ pub fn main() {
     bench(|i| part_2_fsm2_vect_threaded(i, &fsm2a, &fsm2b), 100, &big);
     bench(|i| part_2_fsm3(i, &fsm2a, &fsm2b), 100, &big);
     println!();
+    */
 }
 

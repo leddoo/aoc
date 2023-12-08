@@ -398,6 +398,8 @@ fn run(name: &str, f: impl FnOnce(&str) -> i32, input: &str) {
 }
 
 pub fn main() {
+    println!("-- day 07 --");
+
     run("part_1", part_1, include_str!("d07-test.txt"));
     run("part_1", part_1, include_str!("d07-prod.txt"));
 
@@ -409,5 +411,7 @@ pub fn main() {
 
     run("part_2_fast_isse", part_2_fast_isse, include_str!("d07-test.txt"));
     run("part_2_fast_isse", part_2_fast_isse, include_str!("d07-prod.txt"));
+
+    println!();
 }
 

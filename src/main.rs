@@ -8,7 +8,13 @@ fn main() {
         std::process::exit(1)
     }));
 
+    #[cfg(not(debug_assertions))]
+    for i in 0..4_000_000_000u64 {
+        core::hint::black_box(i);
+    }
 
+    y23::d01::main();
+    y23::d07::main();
     y23::d08::main();
 }
 
