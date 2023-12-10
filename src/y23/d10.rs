@@ -185,14 +185,12 @@ fn part_2(input: &str) -> u64 {
     let (grid, (start_x, start_y)) = Grid::new(input);
 
     let mut windings = vec![0i8; grid.s*grid.h];
-    let mut path = vec![false; grid.s*grid.h];
 
     for (mut prev, first) in [(Step::Down, Step::Up), (Step::Right, Step::Left), (Step::Up, Step::Down), (Step::Left, Step::Right)] {
         if !grid.check_step(start_x, start_y, first) { continue }
 
         let mut x = start_x;
         let mut y = start_y;
-        path[y*grid.s + x] = true;
 
         if first == Step::Up   { windings[y*grid.s + x] -= 1 }
         if first == Step::Down { windings[y*grid.s + x] += 1 }
@@ -203,8 +201,6 @@ fn part_2(input: &str) -> u64 {
         let mut stepped = true;
         while stepped {
             stepped = false;
-
-            path[y*grid.s + x] = true;
 
             for (next_prev, next) in [(Step::Down, Step::Up), (Step::Right, Step::Left), (Step::Up, Step::Down), (Step::Left, Step::Right)] {
                 if next == prev { continue }
@@ -240,20 +236,16 @@ fn part_2(input: &str) -> u64 {
 
         let mut inside = 0;
         for y in 0..grid.h {
-            //println!("{:?}", &windings[y*grid.s..(y+1)*grid.s]);
-
+            let mut was_inside = false;
             let mut w = 0i8;
             for x in 0..grid.w {
-                if w.abs() >= 2 {
-                    if !path[y*grid.s + x] {
-                        //println!("in {x} {y}");
-                        inside += 1;
-                    }
-                }
                 w += windings[y*grid.s + x];
-                //print!("{}", w.abs());
+
+                let is_inside = w.abs() >= 2 && w % 2 == 0;
+                inside += (is_inside & was_inside) as u64;
+
+                was_inside = is_inside;
             }
-            //println!();
             assert_eq!(w, 0);
         }
         return inside;
