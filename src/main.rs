@@ -18,5 +18,6 @@ fn main() {
     y23::d08::main();
     y23::d09::main();
     y23::d10::main();
+    y23::d11::main();
 }
 
