@@ -89,7 +89,7 @@ fn run(name: &str, f: impl FnOnce(&str) -> u64, input: &str) {
 }
 
 pub fn main() {
-    println!("-- day 10 --");
+    println!("-- day 11 --");
 
     run("part_1", part_1, include_str!("d11-test.txt"));
     run("part_1", part_1, include_str!("d11-prod.txt"));
